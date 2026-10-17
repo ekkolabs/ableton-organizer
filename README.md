@@ -4,6 +4,12 @@ A browser overview of a folder of Ableton projects: one row per project folder,
 with inline looping playback, the BPM from the `.als`, a rating and a notes
 field.
 
+![Project list: one row per project with waveform, BPM, length, rating and notes with timestamp chips and hashtags](docs/studio-list.png)
+
+![A project expanded to show its earlier bounces, newest first](docs/studio-versions.png)
+
+*Screenshots use a demo library; the project names, notes and audio are invented.*
+
 ## Run
 
 ```sh
