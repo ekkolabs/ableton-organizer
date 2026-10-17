@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ableton Projects</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  :root{
+    --bg:#0b0c0e; --panel:#121316;
+    --line:#23262c; --line-soft:#1a1d22;
+    --text:#e9ebee; --dim:#8d939b; --faint:#5b6068;
+    --accent:#c8f751; --accent-soft:rgba(200,247,81,.13);
+    --warn:#e8a33d; --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font:13px/1.45 -apple-system,BlinkMacSystemFont,"Inter","Helvetica Neue",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+
+  /* ---------- header ---------- */
+  header{
+    flex:0 0 auto; border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#141519,#101114);
+    padding:10px 16px 0;
+  }
+  .top{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+  h1{font-size:14px; font-weight:600; margin:0; letter-spacing:-.01em}
+  .root{
+    font:11px/1 var(--mono); color:var(--faint);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:46vw;
+  }
+  .stats{margin-left:auto; font:11px/1 var(--mono); color:var(--dim)}
+  .stats b{color:var(--accent); font-weight:600}
+
+  .controls{display:flex; gap:8px; align-items:center; padding:10px 0; flex-wrap:wrap}
+  input,select,button,textarea{font-family:inherit; font-size:12px; color:var(--text)}
+  .field{
+    background:#0d0e11; border:1px solid var(--line); border-radius:6px;
+    padding:6px 9px; outline:none; transition:border-color .12s,box-shadow .12s;
+  }
+  .field:focus{border-color:#3d434c; box-shadow:0 0 0 3px rgba(200,247,81,.07)}
+  #search{width:160px}
+  .btn{
+    background:#1b1d22; border:1px solid var(--line); border-radius:6px;
+    padding:6px 11px; cursor:pointer; transition:background .12s,border-color .12s;
+  }
+  .btn:hover{background:#23262c; border-color:#333841}
+  .btn.on{background:var(--accent-soft); border-color:rgba(200,247,81,.35); color:var(--accent)}
+  .seg{display:flex; border:1px solid var(--line); border-radius:6px; overflow:hidden}
+  .seg button{
+    background:#0d0e11; border:0; border-right:1px solid var(--line);
+    padding:6px 10px; cursor:pointer; color:var(--dim);
+  }
+  .seg button:last-child{border-right:0}
+  .seg button{white-space:nowrap}
+  .seglabel{
+    font:10px/1 var(--mono); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--faint); margin-left:2px;
+  }
+  .seg button.on{background:var(--accent-soft); color:var(--accent)}
+  .spacer{flex:1}
+
+  /* ---------- column headings ---------- */
+  .cols{
+    display:grid; gap:12px; align-items:center;
+    padding:6px 16px; border-bottom:1px solid var(--line);
+    font:10px/1 var(--mono); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--faint); background:#0e0f12; flex:0 0 auto;
+  }
+  .cols,.row,.vrow{grid-template-columns:15px 30px minmax(140px,1.05fr) minmax(130px,1.9fr) 66px 56px 84px minmax(160px,1.4fr) 88px}
+
+  /* ---------- list ---------- */
+  main{flex:1 1 auto; overflow-y:auto; overscroll-behavior:contain}
+  .row{
+    display:grid; gap:12px; align-items:center;
+    padding:8px 16px 8px 13px; border-bottom:1px solid var(--line-soft);
+    border-left:3px solid transparent;   /* Finder tag colour */
+    background:transparent; transition:background .1s;
+  }
+  .row:hover, .vrow:hover{background:rgba(255,255,255,.035)}
+  .row.playing{background:linear-gradient(90deg,rgba(200,247,81,.09),rgba(200,247,81,.02) 60%,transparent)}
+  .row.playing .name{color:var(--accent)}
+
+  .twist{
+    width:15px; height:15px; padding:0; border:0; background:none; cursor:pointer;
+    color:var(--faint); font-size:9px; line-height:1; display:grid; place-items:center;
+    transition:transform .12s, color .12s;
+  }
+  .twist:hover{color:var(--text)}
+  .twist.open{transform:rotate(90deg); color:var(--accent)}
+  .twist:disabled{opacity:0; cursor:default}
+
+  /* older bounces, revealed under their project */
+  .versions{display:none; padding-bottom:6px; border-bottom:1px solid var(--line-soft)}
+  .versions.open{display:block}
+  /* same columns and the same left inset as .row, so the waveform and the
+     length sit directly under the ones above them */
+  .vrow{
+    display:grid; gap:12px; align-items:center;
+    padding:3px 16px 3px 13px; border-left:3px solid transparent;
+    font:11px/1.4 var(--mono); color:var(--dim);
+  }
+  .vrow.playing{color:var(--accent)}
+  .vrow .vname{overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .vrow .vdur{text-align:right; font-size:11px}
+  .vrow .vwave{position:relative; height:22px; border-radius:3px; background:#0e0f12;
+               border:1px solid var(--line-soft); cursor:pointer; overflow:hidden}
+  .vrow .vwave canvas{display:block; width:100%; height:100%}
+  .vcurrent{color:var(--faint)}
+
+  .play{
+    width:30px; height:30px; border-radius:50%; cursor:pointer;
+    border:1px solid var(--line); background:#1b1d22; color:var(--text);
+    display:grid; place-items:center; padding:0; transition:all .12s;
+  }
+  .play:hover:not(:disabled){border-color:var(--accent); color:var(--accent)}
+  .play:disabled{opacity:.25; cursor:default}
+  .row.playing .play{background:var(--accent); border-color:var(--accent); color:#0b0c0e}
+  .play svg{width:11px; height:11px; fill:currentColor; display:block}
+
+  .name{font-weight:500; letter-spacing:-.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .sub{
+    display:flex; gap:6px; align-items:center; margin-top:2px;
+    font:10px/1.3 var(--mono); color:var(--faint);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .tag{
+    padding:1px 5px; border-radius:3px; font-size:9px; letter-spacing:.04em;
+    text-transform:uppercase; border:1px solid transparent; flex:0 0 auto;
+  }
+  .tag.bounce{color:#8fd35a; background:rgba(143,211,90,.1); border-color:rgba(143,211,90,.2)}
+  .tag.output{color:#5aa9d3; background:rgba(90,169,211,.1); border-color:rgba(90,169,211,.2)}
+  .tag.none{color:var(--faint); background:#1a1d22; border-color:var(--line)}
+  .tag.cloud{color:#7fb2d9; background:rgba(127,178,217,.1); border-color:rgba(127,178,217,.22)}
+
+  .dots{display:inline-flex; gap:3px; align-items:center; flex:0 0 auto}
+  .dot{width:7px; height:7px; border-radius:50%; flex:0 0 auto}
+
+  .wave{
+    position:relative; height:34px; border-radius:4px; background:#0e0f12;
+    border:1px solid var(--line-soft); cursor:pointer; overflow:hidden;
+  }
+  .wave.empty{cursor:default; opacity:.35}
+  .wave canvas{display:block; width:100%; height:100%}
+
+  /* read-only: the tempo comes from the .als, it isn't ours to edit */
+  .bpm{text-align:center; font-family:var(--mono); font-size:12px; padding:5px 4px}
+  .bpm .nil{color:var(--faint)}
+  .dur{font:11px/1 var(--mono); color:var(--dim); text-align:right}
+  /* notes: rendered and read-only until you ask to edit */
+  .notes-cell{position:relative; min-width:0}
+  .notes-view{
+    min-height:32px; padding:6px 26px 6px 8px; border-radius:6px;
+    border:1px solid transparent; line-height:1.45; white-space:pre-wrap;
+    word-break:break-word; cursor:default; font-size:12px;
+  }
+  .row:hover .notes-view{border-color:var(--line-soft); background:var(--bg)}
+  .notes-view.empty{color:var(--faint); font-style:italic}
+  .notes-edit{
+    width:100%; padding:6px 8px; resize:none; line-height:1.45; font-size:12px;
+    min-height:32px; overflow:hidden; display:block;
+  }
+  .ts{
+    color:var(--accent); background:rgba(200,247,81,.12);
+    border:1px solid rgba(200,247,81,.28); border-radius:4px;
+    padding:0 4px; font:11px/1.4 var(--mono); cursor:pointer;
+    white-space:nowrap; transition:background .1s;
+  }
+  .ts:hover{background:rgba(200,247,81,.28)}
+  .ts.dead{color:var(--faint); background:#1a1d22; border-color:var(--line); cursor:default}
+  /* Each tag carries its own hue in --h, derived from its name (see tagHue). */
+  .hash{
+    color:hsl(var(--h) 72% calc(var(--l) * 1%));
+    background:hsl(var(--h) 70% 60% / .14);
+    border:1px solid hsl(var(--h) 70% 62% / .3);
+    border-radius:4px;
+    padding:0 4px; font:11px/1.4 var(--mono); cursor:pointer; white-space:nowrap;
+    transition:background .1s;
+  }
+  .hash:hover{background:hsl(var(--h) 70% 60% / .32)}
+  .hash.on{background:hsl(var(--h) 70% 60% / .45); border-color:hsl(var(--h) 72% calc(var(--l) * 1%))}
+
+  /* Premiere-style: pick a floor, see everything at or above it */
+  .mode{
+    padding:4px 7px; min-width:24px; font:12px/1 var(--mono); color:var(--dim);
+  }
+  .mode.exact{background:var(--accent-soft); border-color:rgba(200,247,81,.35); color:var(--accent)}
+  .stars-filter{display:flex; gap:1px; align-items:center}
+  /* in exact mode only the chosen star is lit, so the two modes never look alike */
+  .stars-filter button.edge{color:var(--accent)}
+  .stars-filter button{
+    background:none; border:0; padding:0 1px; cursor:pointer; line-height:1;
+    font-size:14px; color:#3a3f47; transition:color .1s;
+  }
+  .stars-filter button.on{color:var(--accent)}
+  .stars-filter button:hover{color:rgba(200,247,81,.7)}
+  #f-tag{max-width:132px}
+  .pencil{
+    position:absolute; top:4px; right:4px; width:20px; height:20px; padding:0;
+    border-radius:4px; border:1px solid transparent; background:transparent;
+    color:var(--faint); display:none; place-items:center; cursor:pointer;
+  }
+  .row:hover .pencil{display:grid}
+  .pencil:hover{background:#22252b; color:var(--text); border-color:var(--line)}
+  .pencil svg{width:12px; height:12px; display:block}
+  .note-tools{
+    display:flex; gap:6px; align-items:center; margin-top:4px;
+    font:10px/1 var(--mono); color:var(--faint);
+  }
+  .note-tools button{
+    background:#1b1d22; border:1px solid var(--line); border-radius:4px;
+    padding:3px 7px; cursor:pointer; color:var(--dim); font:10px/1 var(--mono);
+  }
+  .note-tools button:hover{background:#23262c; color:var(--text)}
+  .note-tools .stamp{color:var(--accent); border-color:rgba(200,247,81,.3)}
+
+  .stars{display:flex; gap:1px; justify-content:center; align-items:center}
+  .st{
+    background:none; border:0; padding:0 1px; cursor:pointer; line-height:1;
+    font-size:13px; color:#3a3f47; transition:color .1s;
+  }
+  .st.on{color:var(--accent)}
+  .st.preview{color:rgba(200,247,81,.5)}
+  .row:hover .st{color:#4d535c}
+  .row:hover .st.on{color:var(--accent)}
+  .row:hover .st.preview{color:rgba(200,247,81,.55)}
+
+  .acts{display:flex; gap:4px; justify-content:flex-end}
+  .icon{
+    width:26px; height:26px; padding:0; border-radius:5px; cursor:pointer;
+    background:transparent; border:1px solid transparent; color:var(--faint);
+    display:grid; place-items:center; transition:all .12s;
+  }
+  .icon:hover{background:#22252b; color:var(--text); border-color:var(--line)}
+  .icon.star.on{color:var(--accent)}
+  .icon.hide:hover{color:#e8705d; border-color:rgba(232,112,93,.35)}
+  .row.excluded{opacity:.42}
+  .row.excluded .name{text-decoration:line-through; text-decoration-color:var(--faint)}
+  .row.excluded .icon.hide{color:#e8705d}
+  .icon svg{width:13px; height:13px; display:block}
+
+  .empty-state{padding:60px 20px; text-align:center; color:var(--faint)}
+
+  /* ---------- now playing ---------- */
+  footer{
+    flex:0 0 auto; border-top:1px solid var(--line); background:#101114;
+    padding:8px 16px; display:flex; align-items:center; gap:14px;
+    font:11px/1 var(--mono); color:var(--dim); min-height:42px;
+  }
+  footer .np{color:var(--accent); font-weight:600; max-width:30vw;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  footer .bar{
+    flex:1; height:3px; background:#23262c; border-radius:2px;
+    position:relative; cursor:pointer;
+  }
+  footer .bar i{position:absolute; inset:0 auto 0 0; background:var(--accent); border-radius:2px; width:0}
+  kbd{
+    font:10px var(--mono); background:#1b1d22; border:1px solid var(--line);
+    border-bottom-width:2px; border-radius:4px; padding:1px 5px; color:var(--dim);
+  }
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="top">
+    <h1>Ableton Projects</h1>
+    <span class="root" id="root"></span>
+    <span class="stats" id="stats"></span>
+  </div>
+  <div class="controls">
+    <input id="search" class="field" type="search" placeholder="Filter projects…  /" autocomplete="off">
+    <div class="seg" id="sort">
+      <button data-sort="modified" class="on">Recent</button>
+      <button data-sort="name">Name</button>
+      <button data-sort="bpm">BPM</button>
+      <button data-sort="duration">Length</button>
+      <button data-sort="stars">Stars</button>
+    </div>
+    <div class="seg" id="f-audio">
+      <button data-audio="all" class="on">All</button>
+      <button data-audio="yes">Playable</button>
+      <button data-audio="no">No audio</button>
+    </div>
+    <span class="seglabel">Rating</span>
+    <button class="btn mode" id="f-mode" title="Switch between at-least and exactly">&ge;</button>
+    <div class="stars-filter" id="f-stars" title="Click a star to filter by it; click it again to clear">
+      <button data-n="1">★</button><button data-n="2">★</button><button data-n="3">★</button><button data-n="4">★</button><button data-n="5">★</button>
+    </div>
+    <select class="field" id="f-tag" title="Filter by a #hashtag used in notes"></select>
+    <button class="btn" id="f-notes">Notes</button>
+    <button class="btn" id="f-hidden">Excluded <span id="hidden-n"></span></button>
+    <div class="spacer"></div>
+    <button class="btn on" id="loop">Loop ⟳</button>
+    <button class="btn" id="rescan">Rescan</button>
+  </div>
+  <div class="cols">
+    <span></span><span></span><span>Project</span><span>Waveform</span>
+    <span style="text-align:center">BPM</span><span style="text-align:right">Length</span>
+    <span style="text-align:center">Rating</span><span>Notes</span><span></span>
+  </div>
+</header>
+
+<main id="list"></main>
+
+<footer>
+  <span id="np-title" class="np">—</span>
+  <span id="np-time">0:00 / 0:00</span>
+  <div class="bar" id="np-bar"><i id="np-fill"></i></div>
+  <span><kbd>space</kbd> play/pause · <kbd>↑↓</kbd> move · <kbd>/</kbd> search</span>
+</footer>
+
+<audio id="audio"></audio>
+
+<script>
+const $ = s => document.querySelector(s);
+const list = $('#list'), audio = $('#audio');
+
+let projects = [];          // all projects from the server
+let view = [];              // filtered + sorted
+let current = null;         // id of the playing project
+let currentVersion = null;  // index into that project's versions, or null for the primary
+let sortKey = 'modified', sortDir = 'desc';
+const SORT_DIR = {modified:'desc', name:'asc', bpm:'asc', duration:'desc', stars:'desc'};
+const SORT_LABEL = {modified:'Recent', name:'Name', bpm:'BPM', duration:'Length', stars:'Stars'};
+
+// When a project was last actually worked on. Dropbox rewrites folder mtimes in
+// bulk, so the bounce's own creation date is the honest signal; fall back to the
+// folder/.als time only when there's no bounce to go by.
+const recencyOf = p => p.audioCreated ?? p.modified ?? null;
+const filters = {audio:'all', minStars:0, starsExact:false, tag:'', notes:false, hidden:false, q:''};
+const rowEls = new Map();      // id -> row element
+const versionEls = new Map();  // id -> the block of older bounces under it
+const versionPeaks = new Map();// "id/n" -> peaks
+const peakCache = new Map();
+
+/* ---------------- helpers ---------------- */
+const fmtTime = s => {
+  if (!s && s !== 0 || !isFinite(s)) return '–:––';
+  const m = Math.floor(s/60), r = Math.floor(s%60);
+  return m + ':' + String(r).padStart(2,'0');
+};
+const fmtDate = t => {
+  if (!t) return '';
+  const d = new Date(t*1000), now = new Date();
+  const opts = d.getFullYear() === now.getFullYear()
+    ? {month:'short', day:'numeric'} : {year:'numeric', month:'short'};
+  return d.toLocaleDateString(undefined, opts);
+};
+const esc = s => (s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// macOS Finder tag colours, indexed the way the xattr stores them.
+const TAG_COLORS = {
+  1:'#9aa0a6', 2:'#5fc652', 3:'#c46fdd', 4:'#4a9cf6',
+  5:'#f2c53d', 6:'#f4635e', 7:'#f59a3c'
+};
+const tagColor = p => {
+  const t = (p.finderTags || []).find(x => TAG_COLORS[x.color]);
+  return t ? TAG_COLORS[t.color] : null;
+};
+
+// Times (1:23, 1:02:03) and #hashtags, matched in a single pass so neither
+// can match inside the markup the other just produced.
+const DECOR_RE = /\b(\d{1,2}):([0-5]\d)(?::([0-5]\d))?\b|#([\p{L}\p{N}_-]{1,40})/gu;
+const TAG_RE = /#([\p{L}\p{N}_-]{1,40})/gu;
+const tsSeconds = (a, b, c) => c !== undefined
+  ? (+a) * 3600 + (+b) * 60 + (+c)
+  : (+a) * 60 + (+b);
+
+// A tag's colour follows its name, so it is the same in every row, on every
+// machine, and survives a reload — no palette state to keep anywhere.
+//
+// Hues are quantised into buckets rather than taken raw: a free hash puts some
+// pairs 2 degrees apart, which reads as "the same colour, maybe". Chips are
+// rendered independently so there is no global pass to space them out. With
+// 12 hues x 2 lightnesses every bucket is clearly distinct from every other,
+// and two tags that do collide look identical rather than nearly identical —
+// which is the more honest failure. The band around the accent green is
+// skipped so tags never read as timestamps.
+const TAG_HUES = 12, TAG_LEVELS = 3;
+const TAG_LIGHT = [72, 60, 49];
+
+function tagBucket(tag){
+  let h = 0x811c9dc5;                       // FNV-1a over the name
+  for (let i = 0; i < tag.length; i++){
+    h ^= tag.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+
+  // FNV's low bits are poorly mixed for short words and the modulo below only
+  // sees those bits: without this step 20 real tags collapsed onto 12 colours.
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+
+  return (h >>> 0) % (TAG_HUES * TAG_LEVELS);
+}
+
+// Hashing alone is not enough: with 36 buckets, five tags still collide about
+// half the time (birthday problem), and a shared colour defeats the point. The
+// tag list is known at render time, so collisions are resolved against it —
+// every tag keeps its hashed colour unless another tag already took it, and
+// then it probes to the next free one. Deterministic for a given set of tags,
+// so it is stable across rows, reloads and machines; a tag only changes colour
+// if one it actually collides with is added or removed.
+let tagColours = new Map();
+
+function assignTagColours(names){
+  const total = TAG_HUES * TAG_LEVELS;
+  const taken = new Set();
+  const out = new Map();
+
+  for (const tag of names){            // sorted, so the result does not depend on row order
+    let bucket = tagBucket(tag);
+
+    for (let probe = 0; probe < total && taken.has(bucket); probe++)
+      bucket = (bucket + 1) % total;
+
+    taken.add(bucket);
+    out.set(tag, bucket);
+  }
+
+  return out;
+}
+
+const bucketOf = tag => tagColours.has(tag) ? tagColours.get(tag) : tagBucket(tag);
+
+function tagHue(tag){
+  const step = Math.floor(320 / TAG_HUES);   // degrees available once the green band is cut
+  const hue = (bucketOf(tag) % TAG_HUES) * step;
+  return hue < 55 ? hue : hue + 40;          // jump 55..95, where the accent lives
+}
+
+// Second dimension, so a shared hue still tells two tags apart.
+//
+// Lightness is corrected for hue: blue and violet are intrinsically dark, so a
+// flat scale left them under 4.5:1 on the row background while yellows were
+// far above it. The boost peaks in the blues and fades to nothing by yellow.
+function tagLight(tag){
+  const base = TAG_LIGHT[Math.floor(bucketOf(tag) / TAG_HUES)];
+  const blueness = (1 + Math.cos ((tagHue (tag) - 260) * Math.PI / 180)) / 2;
+  return Math.round (base + 17 * blueness);
+}
+
+const tagsOf = p => {
+  const out = new Set();
+  for (const m of (p.notes || '').matchAll(TAG_RE)) out.add(m[1].toLowerCase());
+  return out;
+};
+
+// Escape first, then decorate: neither a time nor a hashtag can contain an
+// HTML-significant character, so matching over escaped text is safe.
+function renderNotes(text, duration, activeTag){
+  if (!(text || '').trim()) return '<span class="empty-note">Notes…</span>';
+  return esc(text).replace(DECOR_RE, (m, a, b, c, tag) => {
+    if (tag !== undefined){
+      const key = tag.toLowerCase();
+      const on = activeTag && key === activeTag ? ' on' : '';
+      return `<span class="hash${on}" data-tag="${esc(key)}" style="--h:${tagHue(key)};--l:${tagLight(key)}" `
+           + `title="Filter by #${esc(tag)}">#${esc(tag)}</span>`;
+    }
+    const t = tsSeconds(a, b, c);
+    const dead = duration != null && t > duration + 1;   // past the end of the audio
+    return `<span class="ts${dead ? ' dead' : ''}" data-t="${t}" title="${
+      dead ? 'Past the end of this bounce' : 'Jump to ' + m}">${m}</span>`;
+  });
+}
+
+const ICON = {
+  play:'<svg viewBox="0 0 10 10"><path d="M2 0l7 5-7 5z"/></svg>',
+  pause:'<svg viewBox="0 0 10 10"><path d="M1 0h3v10H1zM6 0h3v10H6z"/></svg>',
+  star:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1.8l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z" stroke-linejoin="round"/></svg>',
+  starOn:'<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.8l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z"/></svg>',
+  pencil:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11.5 2.5l2 2L5 13l-2.5.5L3 11z" stroke-linejoin="round"/></svg>',
+  hide:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.2 8S3.8 3.6 8 3.6 14.8 8 14.8 8 12.2 12.4 8 12.4 1.2 8 1.2 8z"/><circle cx="8" cy="8" r="1.9"/><path d="M2.4 2.4l11.2 11.2" stroke-linecap="round"/></svg>',
+  show:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.2 8S3.8 3.6 8 3.6 14.8 8 14.8 8 12.2 12.4 8 12.4 1.2 8 1.2 8z"/><circle cx="8" cy="8" r="1.9"/></svg>',
+  finder:'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 4.5h5l1.5 2h6.5v7a1 1 0 01-1 1h-11a1 1 0 01-1-1z" stroke-linejoin="round"/></svg>'
+};
+
+/* ---------------- data ---------------- */
+async function load(){
+  const r = await fetch('/api/library');
+  const d = await r.json();
+  $('#root').textContent = d.root;
+  projects = d.projects;
+  render();
+}
+
+function saveMeta(id, patch){
+  fetch('/api/meta/' + id, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(patch)
+  }).catch(()=>{});
+}
+
+/* ---------------- filtering & sorting ---------------- */
+function computeView(){
+  const q = filters.q.trim().toLowerCase();
+  view = projects.filter(p => {
+    if (filters.hidden !== !!p.hidden) return false;
+    if (filters.audio === 'yes' && !p.audioName) return false;
+    if (filters.audio === 'no'  &&  p.audioName) return false;
+    if (filters.minStars){
+      const n = p.stars || 0;
+      if (filters.starsExact ? n !== filters.minStars : n < filters.minStars) return false;
+    }
+    if (filters.tag && !tagsOf(p).has(filters.tag)) return false;
+    if (filters.notes && !(p.notes||'').trim()) return false;
+    if (q){
+      const hay = (p.name + ' ' + (p.notes||'') + ' ' + (p.audioName||'') + ' '
+                   + (p.finderTags||[]).map(t => t.name || '').join(' ')).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  const valueOf = p =>
+    sortKey === 'bpm'      ? (p.bpm ?? null) :
+    sortKey === 'duration' ? (p.duration ?? null) :
+    sortKey === 'stars'    ? (p.stars || 0) :
+                             recencyOf(p);
+  const byName = (a,b) => a.name.localeCompare(b.name, undefined, {sensitivity:'base'});
+  const flip = d => sortDir === 'asc' ? d : -d;
+  view.sort((a,b) => {
+    if (sortKey === 'name') return flip(byName(a,b));
+    const x = valueOf(a), y = valueOf(b);
+    // projects with no value sit at the bottom in both directions
+    if (x == null && y == null) return byName(a,b);
+    if (x == null) return 1;
+    if (y == null) return -1;
+    return flip(x - y) || byName(a,b);
+  });
+}
+
+function refreshTagList(){
+  const counts = new Map();
+  for (const p of projects){
+    if (p.hidden) continue;
+    for (const t of tagsOf(p)) counts.set(t, (counts.get(t) || 0) + 1);
+  }
+  const sel = $('#f-tag');
+  const names = [...counts.keys()].sort();
+  tagColours = assignTagColours(names);
+  sel.innerHTML = '<option value="">All tags</option>'
+    + names.map(t => `<option value="${esc(t)}">#${esc(t)} (${counts.get(t)})</option>`).join('');
+  if (filters.tag && !counts.has(filters.tag)) filters.tag = '';   // last use deleted
+  sel.value = filters.tag;
+  sel.style.color = filters.tag ? `hsl(${tagHue(filters.tag)} 72% ${tagLight(filters.tag)}%)` : '';
+}
+
+function updateStats(){
+  const live = projects.filter(p => !p.hidden);
+  const playable = live.filter(p => p.audioName).length;
+  const noted = live.filter(p => (p.notes||'').trim()).length;
+  const rated = live.filter(p => p.stars > 0).length;
+  const hidden = projects.length - live.length;
+  $('#stats').innerHTML =
+    `<b>${view.length}</b> shown · ${live.length} projects · ${playable} playable · ${rated} rated · ${noted} noted`
+    + (hidden ? ` · ${hidden} excluded` : '')
+    + (filters.minStars ? ` · <b>${filters.starsExact ? '=' : '≥'}${filters.minStars}★</b>` : '')
+    + (filters.tag ? ` · <b>#${esc(filters.tag)}</b>` : '');
+  $('#hidden-n').textContent = hidden ? '(' + hidden + ')' : '';
+}
+
+/* ---------------- rendering ---------------- */
+function render(){
+  computeView();
+  refreshTagList();
+  updateStats();
+  list.innerHTML = '';
+  rowEls.clear();
+  versionEls.clear();
+  if (!view.length){
+    list.innerHTML = '<div class="empty-state">No projects match.</div>';
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  for (const p of view) frag.appendChild(buildRow(p));
+  list.appendChild(frag);
+  observeWaves();
+  if (current) markPlaying(current);
+}
+
+function dotsHTML(p){
+  const tags = (p.finderTags || []).filter(t => TAG_COLORS[t.color]);
+  if (!tags.length) return '';
+  const dots = tags.slice(0,3).map(t =>
+    `<span class="dot" style="background:${TAG_COLORS[t.color]}"></span>`).join('');
+  const names = tags.map(t => t.name || 'colour ' + t.color).join(', ');
+  return `<span class="dots" title="Finder tag: ${esc(names)}">${dots}</span>`;
+}
+
+function buildRow(p){
+  const row = document.createElement('div');
+  row.className = 'row' + (p.hidden ? ' excluded' : '');
+  row.dataset.id = p.id;
+  const stripe = tagColor(p);
+  if (stripe) row.style.borderLeftColor = stripe;
+  row.tabIndex = 0;
+
+  const hasAudio = !!p.audioName;
+  const bpm = p.bpm;   // always the .als tempo
+  const srcTag = hasAudio
+    ? `<span class="tag ${p.audioSource}">${p.audioSource}</span>`
+      + (p.cloudAudio ? `<span class="tag cloud" title="Online-only in Dropbox. Not downloaded, so no waveform or length — press play to fetch it.">cloud</span>` : '')
+    : `<span class="tag none">no audio</span>`;
+
+  const older = (p.versions || []).length > 1;
+
+  row.innerHTML = `
+    <button class="twist" ${older?'':'disabled'} title="${
+      older ? 'Show ' + ((p.versions.length - 1)) + ' earlier bounce' + (p.versions.length > 2 ? 's' : '') : ''
+    }">${older ? '▶' : ''}</button>
+    <button class="play" ${hasAudio?'':'disabled'} title="Play / pause">${ICON.play}</button>
+    <div class="meta">
+      <div class="name" title="${esc(p.key)}">${esc(p.name)}</div>
+      <div class="sub">
+        ${dotsHTML(p)}
+        ${srcTag}
+        <span title="${p.audioCreated
+            ? 'Bounced ' + new Date(p.audioCreated*1000).toLocaleString()
+            : 'No bounce — project folder last touched ' + new Date((p.modified||0)*1000).toLocaleString()}">${
+          fmtDate(recencyOf(p))}</span>
+        ${p.audioName ? `<span title="${esc(p.audioName)}">· ${esc(p.audioName)}</span>` : ''}
+      </div>
+    </div>
+    <div class="wave ${hasAudio?'':'empty'}"><canvas></canvas></div>
+    <div class="bpm" title="${p.bpm!=null?'Tempo read from '+esc(p.alsName||'the .als'):'No tempo found in this project'}">${bpm!=null?bpm:'<span class="nil">—</span>'}</div>
+    <div class="dur">${p.duration?fmtTime(p.duration):'–:––'}</div>
+    <div class="stars" title="Rate 0-5 — click the same star again to clear">
+      ${[1,2,3,4,5].map(n => `<button class="st ${n<=(p.stars||0)?'on':''}" data-n="${n}">★</button>`).join('')}
+    </div>
+    <div class="notes-cell">
+      <div class="notes-view ${(p.notes||'').trim()?'':'empty'}">${renderNotes(p.notes, p.duration, filters.tag)}</div>
+      <button class="pencil" title="Edit notes (or double-click)">${ICON.pencil}</button>
+    </div>
+    <div class="acts">
+      <button class="icon finder" title="Reveal in Finder">${ICON.finder}</button>
+      <button class="icon hide" title="${p.hidden?'Put back in the list':'Exclude from the list'}">${p.hidden?ICON.show:ICON.hide}</button>
+    </div>`;
+
+  rowEls.set(p.id, row);
+
+  // play
+  row.querySelector('.play').addEventListener('click', e => { e.stopPropagation(); toggle(p); });
+
+  // waveform seek
+  const wave = row.querySelector('.wave');
+  if (hasAudio) wave.addEventListener('click', e => {
+    const frac = (e.clientX - wave.getBoundingClientRect().left) / wave.offsetWidth;
+    if (current !== p.id) { play(p, {frac}); }
+    else if (audio.duration) { audio.currentTime = frac * audio.duration; }
+  });
+
+  // ---- notes: read-only, with timestamps you can click ----
+  const cell = row.querySelector('.notes-cell');
+  const view = row.querySelector('.notes-view');
+
+  const paintView = () => {
+    view.innerHTML = renderNotes(p.notes, p.duration);
+    view.classList.toggle('empty', !(p.notes || '').trim());
+    if (filters.tag){
+      for (const h of view.querySelectorAll('.hash'))
+        h.classList.toggle('on', h.dataset.tag === filters.tag);
+    }
+  };
+
+  view.addEventListener('click', e => {
+    const hash = e.target.closest('.hash');
+    if (hash){
+      e.stopPropagation();
+      const t = hash.dataset.tag;
+      filters.tag = (filters.tag === t) ? '' : t;   // click again to clear
+      render();
+      return;
+    }
+    const chip = e.target.closest('.ts');
+    if (!chip || chip.classList.contains('dead')) return;
+    e.stopPropagation();
+    if (!p.audioName) return;
+    const t = +chip.dataset.t;
+    if (current === p.id && audio.duration) { audio.currentTime = t; audio.play().catch(()=>{}); }
+    else play(p, {t});
+  });
+
+  const startEdit = () => {
+    if (cell.querySelector('.notes-edit')) return;
+    view.style.display = 'none';
+    const ta = document.createElement('textarea');
+    ta.className = 'field notes-edit';
+    ta.value = p.notes || '';
+    ta.spellcheck = false;
+    ta.placeholder = 'Notes… write times like 1:23 to make them clickable';
+    const tools = document.createElement('div');
+    tools.className = 'note-tools';
+    tools.innerHTML = `<button class="stamp" type="button">⧗ insert time</button>
+      <span>\u21A9 newline · \u2318\u21B5 save · esc cancel</span>`;
+    cell.append(ta, tools);
+
+    const autosize = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+    autosize();
+    ta.addEventListener('input', autosize);
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+
+    const stamp = tools.querySelector('.stamp');
+    const liveTime = () => (current === p.id && isFinite(audio.currentTime)) ? audio.currentTime : null;
+    const refresh = () => {
+      const t = liveTime();
+      stamp.textContent = t == null ? '⧗ insert time' : '⧗ ' + fmtTime(t);
+      stamp.disabled = t == null;
+      stamp.style.opacity = t == null ? .45 : 1;
+    };
+    refresh();
+    const ticker = setInterval(refresh, 500);
+
+    stamp.addEventListener('click', () => {
+      const t = liveTime(); if (t == null) return;
+      const label = fmtTime(t);
+      const i = ta.selectionStart ?? ta.value.length;
+      const before = ta.value.slice(0, i), after = ta.value.slice(i);
+      const pad = before && !/\s$/.test(before) ? ' ' : '';
+      ta.value = before + pad + label + ' ' + after;
+      const caret = (before + pad + label + ' ').length;
+      ta.focus(); ta.setSelectionRange(caret, caret);
+      autosize();
+    });
+
+    const finish = (save) => {
+      clearInterval(ticker);
+      if (save && ta.value !== (p.notes || '')) {
+        p.notes = ta.value;
+        saveMeta(p.id, {notes: p.notes});
+        updateStats();
+      }
+      ta.remove(); tools.remove();
+      view.style.display = '';
+      paintView();
+    };
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+      else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); finish(true); }
+      e.stopPropagation();          // don't trip the global shortcuts
+    });
+    ta.addEventListener('blur', () => setTimeout(() => {
+      if (document.activeElement !== stamp) finish(true);
+    }, 120));
+  };
+
+  view.addEventListener('dblclick', startEdit);
+  row.querySelector('.pencil').addEventListener('click', e => { e.stopPropagation(); startEdit(); });
+
+  // actions
+  const rating = row.querySelector('.stars');
+  const paintStars = (upto, preview) => {
+    [...rating.children].forEach(b => {
+      const n = +b.dataset.n;
+      b.classList.toggle('on', !preview && n <= upto);
+      b.classList.toggle('preview', preview && n <= upto);
+    });
+  };
+  rating.addEventListener('click', e => {
+    const b = e.target.closest('.st'); if (!b) return;
+    e.stopPropagation();
+    const n = +b.dataset.n;
+    p.stars = (p.stars === n) ? 0 : n;   // clicking the current rating clears it
+    paintStars(p.stars, false);
+    saveMeta(p.id, {stars: p.stars});
+    if (sortKey === 'stars') render();
+    updateStats();
+  });
+  rating.addEventListener('mouseover', e => {
+    const b = e.target.closest('.st'); if (!b) return;
+    paintStars(+b.dataset.n, true);
+  });
+  rating.addEventListener('mouseleave', () => paintStars(p.stars || 0, false));
+  row.querySelector('.finder').addEventListener('click', e => {
+    e.stopPropagation();
+    fetch('/api/reveal/' + p.id, {method:'POST'});
+  });
+  row.querySelector('.hide').addEventListener('click', e => {
+    e.stopPropagation();
+    p.hidden = !p.hidden;
+    if (p.hidden && current === p.id) audio.pause();
+    saveMeta(p.id, {hidden: p.hidden});
+    render();   // it leaves the current view either way
+  });
+
+  // ---- older bounces, collapsed until the twisty is used ----
+  const block = document.createElement('div');
+  block.className = 'versions';
+  versionEls.set(p.id, block);
+
+  if (older){
+    block.innerHTML = (p.versions || []).map((v, i) => `
+      <div class="vrow" data-v="${i}">
+        <span></span>
+        <button class="play" title="Play this bounce">${ICON.play}</button>
+        <span class="vname ${i === 0 ? 'vcurrent' : ''}" title="${esc(v.name)}${
+          i === 0 ? ' — the bounce this row plays' : ''}">${fmtDate(v.created)} · ${esc(v.name)}</span>
+        <span class="vwave"><canvas></canvas></span>
+        <span></span>
+        <span class="vdur">${v.duration ? fmtTime(v.duration) : '–:––'}</span>
+        <span></span><span></span><span></span>
+      </div>`).join('');
+
+    const twist = row.querySelector('.twist');
+    twist.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = !block.classList.contains('open');
+      block.classList.toggle('open', open);
+      twist.classList.toggle('open', open);
+      if (open) for (let i = 0; i < p.versions.length; i++) loadVersionPeaks(p, i);
+    });
+
+    block.addEventListener('click', e => {
+      const vrow = e.target.closest('.vrow');
+      if (!vrow) return;
+      const n = +vrow.dataset.v;
+
+      if (e.target.closest('.vwave')){
+        const box = vrow.querySelector('.vwave');
+        const frac = (e.clientX - box.getBoundingClientRect().left) / box.offsetWidth;
+        if (current === p.id && currentVersion === n && audio.duration) audio.currentTime = frac * audio.duration;
+        else play(p, {frac}, n);
+        return;
+      }
+
+      if (e.target.closest('.play')) toggle(p, n);
+    });
+  }
+
+  const frag = document.createDocumentFragment();
+  frag.append(row, block);
+  return frag;
+}
+
+async function loadVersionPeaks(p, n){
+  const key = p.id + '/' + n;
+  if (!versionPeaks.has(key)){
+    try {
+      const r = await fetch('/api/peaks/' + key);
+      const d = await r.json();
+      if (!d.peaks) return;
+      versionPeaks.set(key, d.peaks);
+    } catch (e){ return; }
+  }
+  drawVersionWave(p.id, n);
+}
+
+function drawVersionWave(id, n){
+  const block = versionEls.get(id);
+  const peaks = versionPeaks.get(id + '/' + n);
+  if (!block || !peaks) return;
+  const vrow = block.querySelector(`.vrow[data-v="${n}"]`);
+  if (!vrow) return;
+  const canvas = vrow.querySelector('canvas'), box = canvas.parentElement;
+  const w = box.clientWidth, h = box.clientHeight;
+  if (!w || !h) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== w*dpr || canvas.height !== h*dpr){ canvas.width = w*dpr; canvas.height = h*dpr; }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+
+  const live = current === id && currentVersion === n;
+  const progress = (live && audio.duration) ? audio.currentTime / audio.duration : 0;
+  const mid = h/2, bw = w/peaks.length, playedX = progress * w;
+
+  for (let i = 0; i < peaks.length; i++){
+    const x = i*bw;
+    const amp = Math.max(peaks[i]*(h/2-1), .5);
+    ctx.fillStyle = (x < playedX) ? '#c8f751' : (live ? '#87909e' : '#626b79');
+    ctx.fillRect(x, mid-amp, Math.max(bw-0.5,.5), amp*2);
+  }
+}
+
+/* ---------------- waveforms ---------------- */
+let waveObserver;
+function observeWaves(){
+  if (waveObserver) waveObserver.disconnect();
+  waveObserver = new IntersectionObserver(entries => {
+    for (const en of entries){
+      if (!en.isIntersecting) continue;
+      const row = en.target;
+      waveObserver.unobserve(row);
+      const p = projects.find(x => x.id === row.dataset.id);
+      if (p && p.audioName && !p.cloudAudio) loadPeaks(p);
+    }
+  }, {root:list, rootMargin:'300px'});
+  for (const row of rowEls.values()) waveObserver.observe(row);
+}
+
+async function loadPeaks(p){
+  let peaks = peakCache.get(p.id);
+  if (!peaks){
+    try{
+      const r = await fetch('/api/peaks/' + p.id);
+      const d = await r.json();
+      peaks = d.peaks;
+    }catch(e){ peaks = null; }
+    if (!peaks) return;
+    peakCache.set(p.id, peaks);
+  }
+  drawWave(p.id);
+}
+
+function drawWave(id, progress){
+  const row = rowEls.get(id);
+  const peaks = peakCache.get(id);
+  if (!row || !peaks) return;
+  const canvas = row.querySelector('canvas');
+  const box = canvas.parentElement;
+  const w = box.clientWidth, h = box.clientHeight;
+  if (!w || !h) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (canvas.width !== w*dpr || canvas.height !== h*dpr){
+    canvas.width = w*dpr; canvas.height = h*dpr;
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+
+  if (progress == null)
+    progress = (current === id && currentVersion === null && audio.duration)
+      ? audio.currentTime / audio.duration : 0;
+  const mid = h/2, n = peaks.length, bw = w/n;
+  const playedX = progress * w;
+
+  for (let i=0;i<n;i++){
+    const x = i*bw;
+    const amp = Math.max(peaks[i]*(h/2-1), .5);
+    const live = current === id && currentVersion === null;
+    ctx.fillStyle = (x < playedX) ? '#c8f751' : (live ? '#87909e' : '#626b79');
+    ctx.fillRect(x, mid-amp, Math.max(bw-0.5, .5), amp*2);
+  }
+  if (current === id && currentVersion === null && progress > 0){
+    ctx.fillStyle = 'rgba(200,247,81,.9)';
+    ctx.fillRect(playedX-0.5, 0, 1.5, h);
+  }
+}
+
+/* ---------------- playback ---------------- */
+function markPlaying(id){
+  for (const [pid,row] of rowEls){
+    const isPrimary = pid === id && currentVersion === null;
+    const on = isPrimary && !audio.paused;
+    row.classList.toggle('playing', isPrimary);
+    const btn = row.querySelector('.play');
+    if (btn) btn.innerHTML = on ? ICON.pause : ICON.play;
+
+    const block = versionEls.get(pid);
+    if (!block) continue;
+    for (const vrow of block.querySelectorAll('.vrow')){
+      const live = pid === id && currentVersion === +vrow.dataset.v;
+      vrow.classList.toggle('playing', live);
+      vrow.querySelector('.play').innerHTML = live && !audio.paused ? ICON.pause : ICON.play;
+    }
+  }
+}
+
+// at: {frac} for a click along the waveform, {t} for an exact second from a
+// note timestamp — going through a fraction there would round the target.
+function play(p, at, version = null){
+  if (current !== p.id || currentVersion !== version){
+    current = p.id;
+    currentVersion = version;
+    audio.src = '/api/audio/' + p.id + (version == null ? '' : '/' + version);
+    audio.loop = $('#loop').classList.contains('on');
+    const v = version == null ? null : (p.versions || [])[version];
+    $('#np-title').textContent = v ? p.name + '  ·  ' + v.name : p.name;
+  }
+  if (at != null){
+    const seek = () => {
+      if (!audio.duration) return;
+      const t = at.t != null ? at.t : at.frac * audio.duration;
+      audio.currentTime = Math.max(0, Math.min(t, audio.duration - 0.05));
+    };
+    if (audio.readyState >= 1) seek();
+    else audio.addEventListener('loadedmetadata', seek, {once:true});
+  }
+  audio.play().catch(()=>{});
+  markPlaying(p.id);
+}
+
+function toggle(p, version = null){
+  if (current === p.id && currentVersion === version && !audio.paused){
+    audio.pause();
+    markPlaying(p.id);
+    return;
+  }
+  play(p, null, version);
+}
+
+audio.addEventListener('timeupdate', () => {
+  if (!current) return;
+  if (currentVersion === null) drawWave(current);
+  else drawVersionWave(current, currentVersion);
+  const d = audio.duration || 0;
+  $('#np-time').textContent = fmtTime(audio.currentTime) + ' / ' + fmtTime(d);
+  $('#np-fill').style.width = (d ? (audio.currentTime/d*100) : 0) + '%';
+});
+audio.addEventListener('play',  () => markPlaying(current));
+audio.addEventListener('pause', () => markPlaying(current));
+// With loop off, run on through the list you are looking at — the filtered,
+// sorted view, not the whole library — skipping anything with nothing to play.
+// (`ended` never fires while audio.loop is set, so looping is unaffected.)
+function nextInView(afterId){
+  const i = view.findIndex(p => p.id === afterId);
+  if (i < 0) return null;                  // it was filtered away mid-play
+  for (let k = i + 1; k < view.length; k++)
+    if (view[k].audioName) return view[k];
+  return null;                             // end of the list: stop
+}
+
+audio.addEventListener('ended', () => {
+  const next = audio.loop ? null : nextInView(current);
+  if (!next){
+    markPlaying(current);
+    return;
+  }
+  play(next);
+  const row = rowEls.get(next.id);
+  if (row) row.scrollIntoView({block:'nearest', behavior:'smooth'});
+});
+
+$('#np-bar').addEventListener('click', e => {
+  if (!audio.duration) return;
+  const bar = $('#np-bar');
+  audio.currentTime = (e.clientX - bar.getBoundingClientRect().left) / bar.offsetWidth * audio.duration;
+});
+
+/* ---------------- controls ---------------- */
+$('#search').addEventListener('input', e => { filters.q = e.target.value; render(); });
+
+function paintSort(){
+  for (const b of $('#sort').children){
+    const active = b.dataset.sort === sortKey;
+    b.classList.toggle('on', active);
+    b.textContent = SORT_LABEL[b.dataset.sort] + (active ? (sortDir === 'asc' ? ' ↑' : ' ↓') : '');
+  }
+}
+$('#sort').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const k = b.dataset.sort;
+  if (k === sortKey) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortKey = k; sortDir = SORT_DIR[k]; }
+  paintSort();
+paintStarFilter();
+  render();
+});
+paintSort();
+paintStarFilter();
+
+$('#f-audio').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  filters.audio = b.dataset.audio;
+  [...e.currentTarget.children].forEach(c => c.classList.toggle('on', c === b));
+  render();
+});
+
+function toggleFilter(sel, key){
+  $(sel).addEventListener('click', e => {
+    filters[key] = !filters[key];
+    e.currentTarget.classList.toggle('on', filters[key]);
+    render();
+  });
+}
+toggleFilter('#f-notes','notes');
+toggleFilter('#f-hidden','hidden');
+
+function paintStarFilter(){
+  for (const b of $('#f-stars').children){
+    const n = +b.dataset.n;
+    const lit = filters.starsExact ? n === filters.minStars : n <= filters.minStars;
+    b.classList.toggle('on', lit && !filters.starsExact);
+    b.classList.toggle('edge', lit && filters.starsExact);
+  }
+
+  const mode = $('#f-mode');
+  mode.innerHTML = filters.starsExact ? '=' : '&ge;';
+  mode.classList.toggle('exact', filters.starsExact);
+  mode.title = filters.starsExact
+    ? 'Exactly this many stars — click for at-least'
+    : 'This many stars or more — click for exactly';
+}
+$('#f-mode').addEventListener('click', () => {
+  filters.starsExact = !filters.starsExact;
+  paintStarFilter();
+  if (filters.minStars) render();     // only changes the list when a threshold is set
+});
+
+$('#f-stars').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const n = +b.dataset.n;
+  filters.minStars = (filters.minStars === n) ? 0 : n;   // click the active star to clear
+  paintStarFilter();
+  render();
+});
+
+$('#f-tag').addEventListener('change', e => {
+  filters.tag = e.target.value;
+  render();
+});
+
+$('#loop').addEventListener('click', e => {
+  const on = !e.currentTarget.classList.contains('on');
+  e.currentTarget.classList.toggle('on', on);
+  audio.loop = on;
+});
+
+$('#rescan').addEventListener('click', async e => {
+  e.currentTarget.textContent = 'Scanning…';
+  await fetch('/api/rescan', {method:'POST'});
+  const poll = setInterval(async () => {
+    const s = await (await fetch('/api/status')).json();
+    if (!s.scanning){
+      clearInterval(poll);
+      peakCache.clear();
+      await load();
+      $('#rescan').textContent = 'Rescan';
+    }
+  }, 700);
+});
+
+/* keyboard */
+document.addEventListener('keydown', e => {
+  const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
+  if (e.key === '/' && !typing){ e.preventDefault(); $('#search').focus(); return; }
+  if (typing) return;
+  if (e.key === ' '){
+    e.preventDefault();
+    const row = document.activeElement.closest?.('.row');
+    const p = row ? projects.find(x => x.id === row.dataset.id)
+                  : view.find(x => x.id === current);
+    if (p && p.audioName) toggle(p);
+    return;
+  }
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    e.preventDefault();
+    const rows = [...list.querySelectorAll('.row')];
+    const i = rows.indexOf(document.activeElement.closest?.('.row'));
+    const next = rows[Math.min(rows.length-1, Math.max(0, i + (e.key==='ArrowDown'?1:-1)))];
+    if (next){ next.focus(); next.scrollIntoView({block:'nearest'}); }
+  }
+});
+
+let rt;
+window.addEventListener('resize', () => {
+  clearTimeout(rt);
+  rt = setTimeout(() => { for (const id of peakCache.keys()) drawWave(id); }, 120);
+});
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# local state: BPM cache, waveform peaks, your notes/stars/exclusions
+data/
+.DS_Store
+__pycache__/
+*.pyc

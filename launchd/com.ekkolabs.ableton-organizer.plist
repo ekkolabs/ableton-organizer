@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.ekkolabs.ableton-organizer</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/python3.13</string>
+    <string>-u</string>
+    <string>/Users/YOU/src/ableton-organizer/organizer.py</string>
+    <string>--lan</string>
+    <string>--no-open</string>
+    <string>--port</string>
+    <string>8766</string>
+    <string>--cert</string>
+    <string>/Users/YOU/.config/ableton-organizer/ts-cert.pem</string>
+    <string>--key</string>
+    <string>/Users/YOU/.config/ableton-organizer/ts-key.pem</string>
+    <string>/Users/YOU/path/to/your/projects</string>
+    <string>--wait-for-root</string>
+    <string>300</string>
+    <string>--password-file</string>
+    <string>/Users/YOU/.config/ableton-organizer/password</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/YOU/src/ableton-organizer</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>30</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+
+  <key>StandardOutPath</key>
+  <string>/Users/YOU/Library/Logs/ableton-organizer.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/YOU/Library/Logs/ableton-organizer.log</string>
+</dict>
+</plist>
